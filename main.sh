@@ -19,6 +19,7 @@ while [[ $1 != "" ]]; do
 done
 
 #Verifica a linguagem definida e escolhe qual arquivo será executado (selectionsort.py, mergesort.py, selectionsort.c ou mergesort.c)
+
 #VERIFICA COM LING = "PYTHON"
 if [[ "$LING" == "python" ]]; then
     if [[ "$ALG" == "selection" ]]; then
@@ -37,13 +38,14 @@ fi
 if [[ "$LING" == "c" ]]; then
     if [[ "$ALG" == "selection" ]]; then
         FILE="selectionsort.c"
-        CMD="gcc $FILE -o $ALG"
+        CMD="gcc $FILE -o $ALG | ./$ALG"
         
     elif [[ "$ALG" == "merge" ]]; then
         FILE="mergesort.c"
-        CMD="gcc $FILE -o $ALG"
+        CMD="gcc $FILE -o $ALG | ./$ALG"
     else
         echo "Algoritmo inválido! Use: selection ou merge"
     fi
 fi
-        
+
+$CMD $TAM $CASO
