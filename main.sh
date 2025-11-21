@@ -1,74 +1,92 @@
 #!/bin/bash
 
+set -euo pipefail
+
 # LER PARÂMETROS DO USUÁRIO
-while getopts "l:a:n:t:c:" opt; do
+while getopts "l:a:t:c:" opt; do
     case $opt in
-        l) linguagem=$OPTARG ;;   
-        a) algoritmo=$OPTARG ;;   
-        n) repeticoes=$OPTARG ;;  
-        t) tamanho=$OPTARG ;;     
-        c) caso=$OPTARG ;;        
+        l) linguagem=$OPTARG ;;   # c ou python
+        a) algoritmo=$OPTARG ;;   # merge ou selection
+        t) tamanho=$OPTARG ;;     # tamanho do vetor
+        c) caso=$OPTARG ;;        # tipo do caso 1, 2 ou 3
+        *) echo "Parâmetro inválido"; exit 1 ;;
     esac
 done
 
 # VALIDAR PARÂMETROS
-if [[ -z "$linguagem" || -z "$algoritmo" || -z "$repeticoes" || -z "$tamanho" || -z "$caso" ]]; then
+if [[ -z "${linguagem:-}" || -z "${algoritmo:-}" || -z "${tamanho:-}" || -z "${caso:-}" ]]; then
     echo "ERRO: Parâmetros insuficientes."
-    echo "Uso: ./executaScriptShell -l <linguagem> -a <algoritmo> -n <execuções> -t <tamanho> -c <caso>"
+    echo "Uso: ./executaScriptShell.sh -l <linguagem> -a <algoritmo> -t <tamanho> -c <caso>"
+    echo "Ex: ./executaScriptShell.sh -l python -a merge -t 10000 -c 2"
     exit 1
 fi
 
-# DEFINIR ARQUIVO DE SAÍDA 
-arquivo_log="log_${linguagem}_${algoritmo}_${tamanho}_${caso}.csv"
+# CONFIGURAÇÕES
+repeticoes=10 
+arquivo_log="media_${linguagem}_${algoritmo}_${tamanho}_${caso}.csv"
 
-echo "tamanho,tempo" > $arquivo_log
-
-# DEFINIR COMANDO DE EXECUÇÃO
-
+# MONTAR COMANDO DE EXECUÇÃO
 if [[ $linguagem == "c" ]]; then
-    
+
     if [[ $algoritmo == "merge" ]]; then
-        fonte="merge_c.c"
+        fonte="merge_c.c"           # ajuste se o nome do arquivo for outro
         binario="merge_c.out"
     elif [[ $algoritmo == "selection" ]]; then
         fonte="selection_c.c"
         binario="selection_c.out"
     else
-        echo "Algoritmo inválido."
+        echo "Algoritmo inválido. Use 'merge' ou 'selection'."
         exit 1
     fi
 
-    echo "Compilando código C..."
-    gcc $fonte -o $binario
+    echo "Compilando $fonte ..."
+    gcc "$fonte" -O2 -o "$binario" || { echo "Falha na compilação."; exit 1; }
     comando="./$binario $tamanho $caso"
 
 elif [[ $linguagem == "python" ]]; then
-    
+
     if [[ $algoritmo == "merge" ]]; then
-        comando="python3 merge_py.py $tamanho $caso"
+        script_py="merge_py.py"
     elif [[ $algoritmo == "selection" ]]; then
-        comando="python3 selection_py.py $tamanho $caso"
+        script_py="selection_py.py"
     else
-        echo "Algoritmo inválido."
+        echo "Algoritmo inválido. Use 'merge' ou 'selection'."
         exit 1
     fi
 
+    comando="python3 $script_py $tamanho $caso"
+
 else
-    echo "Linguagem inválida (use c ou python)."
+    echo "Linguagem inválida (use 'c' ou 'python')."
     exit 1
 fi
 
-# EXECUTAR N VEZES
-echo "Executando $repeticoes vezes..."
+# RODAR REPETIÇÕES E CALCULAR MÉDIA
+echo "Executando $repeticoes vezes: $comando"
 
-for ((i=1; i<=repeticoes; i++))
-do
+sum=0
+
+for ((i=1; i<=repeticoes; i++)); do
     linha=$($comando)
-    
-    linha_csv=$(echo "$linha" | sed 's/;/,/')
-    
-    echo "$linha_csv" >> $arquivo_log
+    tempo=$(echo "$linha" | awk -F';' '{gsub(/^[ \t]+|[ \t]+$/,"",$2); print $2}')
+
+    if [[ -z "$tempo" ]]; then
+        echo "Erro: saída do programa inesperada: '$linha'"
+        exit 1
+    fi
+
+    sum=$(awk -v s="$sum" -v t="$tempo" 'BEGIN{printf "%.12f", s + t}')
+    echo "Run $i: tempo = $tempo s"
 done
 
-echo "Execução concluída!"
-echo "Resultados salvos em: $arquivo_log"
+# calcula média
+media=$(awk -v s="$sum" -v n="$repeticoes" 'BEGIN{printf "%.12f", s / n}')
+
+#--------- 6) GRAVAR NO CSV (APENAS A MÉDIA) ----------
+# Cabeçalho: tamanho,tempo_medio
+echo "tamanho,tempo_medio" > "$arquivo_log"
+# Linha com valores
+echo "${tamanho},${media}" >> "$arquivo_log"
+
+echo "Concluído: média de $repeticoes execuções = ${media} s"
+echo "Arquivo gerado: $arquivo_log"
