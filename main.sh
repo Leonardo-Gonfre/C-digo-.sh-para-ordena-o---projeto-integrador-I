@@ -22,8 +22,8 @@ if [[ -z "${linguagem:-}" || -z "${algoritmo:-}" || -z "${tamanho:-}" || -z "${c
 fi
 
 # CONFIGURAÇÕES
-repeticoes=10 
-arquivo_log="media_${linguagem}_${algoritmo}_${tamanho}_${caso}.csv"
+repeticoes=10 #Default = 10
+arquivo_log="arquivo_log.csv"
 
 # MONTAR COMANDO DE EXECUÇÃO
 if [[ $linguagem == "c" ]]; then
@@ -61,6 +61,15 @@ else
     exit 1
 fi
 
+# VERIFICA SE O ARQUIVO LOG JÁ EXISTE
+if [[ -f $arquivo_log ]]; then
+    echo ""
+else
+    # Cabeçalho: linguagem,algoritmo,modo,entradas,media
+    linha="Linguagem,Algoritmo,Modo,Tamanho,Média"
+    echo $linha > $arquivo_log
+fi
+
 # RODAR REPETIÇÕES E CALCULAR MÉDIA
 echo "Executando $repeticoes vezes: $comando"
 
@@ -76,17 +85,15 @@ for ((i=1; i<=repeticoes; i++)); do
     fi
 
     sum=$(awk -v s="$sum" -v t="$tempo" 'BEGIN{printf "%.12f", s + t}')
-    echo "Run $i: tempo = $tempo s"
+    echo "Run $i: Tempo = $tempo s"
 done
 
-# calcula média
-media=$(awk -v s="$sum" -v n="$repeticoes" 'BEGIN{printf "%.12f", s / n}')
+# CALCULA A MÉDIA
+media=$(awk -v s="$sum" -v n="$repeticoes" 'BEGIN{printf "%.12f", s / n}') #Divide a soma pelo número de repetições e formata em até 12 casas decimais
+media=$(echo "$media" | tr ',' '.') #Formata a média para substituir vírgula por ponto
 
-#--------- 6) GRAVAR NO CSV (APENAS A MÉDIA) ----------
-# Cabeçalho: tamanho,tempo_medio
-echo "tamanho,tempo_medio" > "$arquivo_log"
-# Linha com valores
-echo "${tamanho},${media}" >> "$arquivo_log"
+# GRAVAR O RESULTADO NO CSV
+echo "$linguagem,$algoritmo,$caso,$tamanho,$media" >> "$arquivo_log"
 
-echo "Concluído: média de $repeticoes execuções = ${media} s"
-echo "Arquivo gerado: $arquivo_log"
+echo "Concluído: média de $repeticoes execuções = ${media}s"
+echo "Resultado enviado para o arquivo: $arquivo_log"
