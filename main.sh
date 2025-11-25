@@ -16,8 +16,8 @@ done
 # VALIDAR PARÂMETROS
 if [[ -z "${linguagem:-}" || -z "${algoritmo:-}" || -z "${tamanho:-}" || -z "${caso:-}" ]]; then
     echo "ERRO: Parâmetros insuficientes."
-    echo "Uso: ./executaScriptShell.sh -l <linguagem> -a <algoritmo> -t <tamanho> -c <caso>"
-    echo "Ex: ./executaScriptShell.sh -l python -a merge -t 10000 -c 2"
+    echo "Uso: ./bash.sh -l <linguagem> -a <algoritmo> -t <tamanho> -c <caso>"
+    echo "Ex: ./bash.sh -l python -a merge -t 10000 -c 2"
     exit 1
 fi
 
@@ -29,11 +29,11 @@ arquivo_log="arquivo_log.csv"
 if [[ $linguagem == "c" ]]; then
 
     if [[ $algoritmo == "merge" ]]; then
-        fonte="merge_c.c"           # ajuste se o nome do arquivo for outro
-        binario="merge_c.out"
+        fonte="algoritmos/merge_c.c"           # ajuste se o nome do arquivo for outro
+        binario="bin/merge_c.out"
     elif [[ $algoritmo == "selection" ]]; then
-        fonte="selection_c.c"
-        binario="selection_c.out"
+        fonte="algoritmos/selection_c.c"
+        binario="bin/selection_c.out"
     else
         echo "Algoritmo inválido. Use 'merge' ou 'selection'."
         exit 1
@@ -46,9 +46,9 @@ if [[ $linguagem == "c" ]]; then
 elif [[ $linguagem == "python" ]]; then
 
     if [[ $algoritmo == "merge" ]]; then
-        script_py="merge_py.py"
+        script_py="algoritmos/merge_py.py"
     elif [[ $algoritmo == "selection" ]]; then
-        script_py="selection_py.py"
+        script_py="algoritmos/selection_py.py"
     else
         echo "Algoritmo inválido. Use 'merge' ou 'selection'."
         exit 1
@@ -66,7 +66,7 @@ if [[ -f $arquivo_log ]]; then
     echo ""
 else
     # Cabeçalho: linguagem,algoritmo,modo,entradas,media
-    linha="Linguagem,Algoritmo,Modo,Tamanho,Média"
+    linha="linguagem,algoritmo,modo,tamanho,tempo"
     echo $linha > $arquivo_log
 fi
 
@@ -84,13 +84,15 @@ for ((i=1; i<=repeticoes; i++)); do
         exit 1
     fi
 
-    sum=$(awk -v s="$sum" -v t="$tempo" 'BEGIN{printf "%.12f", s + t}')
-    echo "Run $i: Tempo = $tempo s"
+    sum=$(echo "$sum + $tempo" | bc -l)
+    echo "Run $i: Tempo = ${tempo}s"
 done
 
 # CALCULA A MÉDIA
-media=$(awk -v s="$sum" -v n="$repeticoes" 'BEGIN{printf "%.12f", s / n}') #Divide a soma pelo número de repetições e formata em até 12 casas decimais
-media=$(echo "$media" | tr ',' '.') #Formata a média para substituir vírgula por ponto
+media=$(echo "scale=12; $sum / $repeticoes" | bc -l)
+media=$(echo "scale=12; $media / 1" | bc -l)
+media=$(echo "$media" | sed 's/^\./0./')
+
 
 # GRAVAR O RESULTADO NO CSV
 echo "$linguagem,$algoritmo,$caso,$tamanho,$media" >> "$arquivo_log"
