@@ -3,7 +3,7 @@
 programa=$1
 
 linguagens=("python" "c")
-algoritmos=("merge" "selection")
+algoritmos=("mergesort" "selectionsort")
 casos=(1 2)
 tamanhos=(10 100 1000 10000 100000)
 

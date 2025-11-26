@@ -17,7 +17,7 @@ done
 if [[ -z "${linguagem:-}" || -z "${algoritmo:-}" || -z "${tamanho:-}" || -z "${caso:-}" ]]; then
     echo "ERRO: Parâmetros insuficientes."
     echo "Uso: ./bash.sh -l <linguagem> -a <algoritmo> -t <tamanho> -c <caso>"
-    echo "Ex: ./bash.sh -l python -a merge -t 10000 -c 2"
+    echo "Ex: ./bash.sh -l python -a mergesort -t 10000 -c 2"
     exit 1
 fi
 
@@ -28,10 +28,10 @@ arquivo_log="arquivo_log.csv"
 # MONTAR COMANDO DE EXECUÇÃO
 if [[ $linguagem == "c" ]]; then
 
-    if [[ $algoritmo == "merge" ]]; then
+    if [[ $algoritmo == "mergesort" ]]; then
         fonte="algoritmos/merge_c.c"           # ajuste se o nome do arquivo for outro
         binario="bin/merge_c.out"
-    elif [[ $algoritmo == "selection" ]]; then
+    elif [[ $algoritmo == "selectionsort" ]]; then
         fonte="algoritmos/selection_c.c"
         binario="bin/selection_c.out"
     else
@@ -45,12 +45,12 @@ if [[ $linguagem == "c" ]]; then
 
 elif [[ $linguagem == "python" ]]; then
 
-    if [[ $algoritmo == "merge" ]]; then
+    if [[ $algoritmo == "mergesort" ]]; then
         script_py="algoritmos/merge_py.py"
-    elif [[ $algoritmo == "selection" ]]; then
+    elif [[ $algoritmo == "selectionsort" ]]; then
         script_py="algoritmos/selection_py.py"
     else
-        echo "Algoritmo inválido. Use 'merge' ou 'selection'."
+        echo "Algoritmo inválido. Use 'mergesort' ou 'selectionsort'."
         exit 1
     fi
 
